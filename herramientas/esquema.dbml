@@ -1,0 +1,1743 @@
+Project trazabilidad_panela {
+  database_type: 'PostgreSQL'
+  Note: 'Sistema de trazabilidad de panela: campo, lotes, planta y despacho. Esquema al 2026-10-21. Cada módulo es un grupo de color.'
+}
+
+// Sistema de trazabilidad de panela — esquema al 2026-10-21
+Table cooperatives {
+  id "uuid" [pk]
+  name "varchar(255)" [not null]
+  code "varchar(50)" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  is_active "boolean"
+  cane_density "numeric(5,4)"
+  access_code "text"
+}
+Table coop_modules {
+  id "uuid" [pk]
+  name "varchar(255)" [not null]
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  is_active "boolean"
+  default_density "float8"
+}
+Table users {
+  user_id "varchar(8)" [not null]
+  first_name "varchar(100)" [not null]
+  last_name "varchar(100)" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  email "varchar(255)"
+  auth_user_id "uuid"
+  cooperative_id "uuid" [not null]
+  role "text" [not null]
+  coop_module_id "uuid"
+  is_support "boolean"
+}
+Table web_users {
+  id "uuid" [pk]
+  auth_user_id "uuid" [not null]
+  cooperative_id "uuid" [not null]
+  first_name "varchar(100)" [not null]
+  last_name "varchar(100)" [not null]
+  role "varchar(50)" [not null]
+  is_active "boolean" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  username "varchar(50)" [not null]
+}
+Table user_module_assignments {
+  user_id "varchar(8)" [not null]
+  cooperative_id "uuid" [not null]
+  coop_module_id "uuid" [not null]
+  created_at "timestamptz"
+}
+Table campaigns {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  year "integer" [not null]
+  start_date "date"
+  end_date "date"
+  is_active "boolean" [not null]
+  created_at "timestamptz" [not null]
+}
+Table certified_workers {
+  id "uuid" [pk]
+  first_name "varchar(100)" [not null]
+  last_name "varchar(100)" [not null]
+  cooperative_id "uuid" [not null]
+  coop_module_id "uuid" [not null]
+  dni "varchar(8)"
+  position "varchar(100)"
+  certified_since "date"
+  certified_until "date"
+  is_active "boolean" [not null]
+  notes "text"
+  created_at "timestamptz" [not null]
+  updated_at "timestamptz" [not null]
+}
+Table form_configurations {
+  id "uuid" [pk]
+  cooperative_id "uuid"
+  step_key "text" [not null]
+  fields "jsonb" [not null]
+  is_active "boolean" [not null]
+  version "integer" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+TableGroup org [color: #0f4c5c, note: 'Organización, usuarios y configuración'] {
+cooperatives
+coop_modules
+users
+web_users
+user_module_assignments
+campaigns
+certified_workers
+form_configurations
+}
+Table producers {
+  id "uuid" [pk]
+  first_name "varchar(255)" [not null]
+  last_name "varchar(255)" [not null]
+  dni "varchar(8)" [not null]
+  cooperative_id "uuid" [not null]
+  coop_module_id "uuid" [not null]
+  is_member "boolean" [not null]
+  is_active "boolean"
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  appagrop_code "varchar(50)"
+  default_extraction_percentage "numeric(5,2)"
+  default_cachaza_percentage "numeric(5,2)"
+}
+Table plots {
+  id "uuid" [pk]
+  code "varchar(100)"
+  producer_id "uuid" [not null]
+  is_active "boolean"
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  name "varchar(200)" [not null]
+  default_extraction_percentage "numeric(5,2)"
+  default_cachaza_percentage "numeric(5,2)"
+}
+Table producer_quotas {
+  id "uuid" [pk]
+  producer_id "uuid" [not null]
+  batch_cert_id "uuid" [not null]
+  cooperative_id "uuid" [not null]
+  cupo_kg "numeric(10,2)" [not null]
+  notes "text"
+  created_by "varchar(8)"
+  created_at "timestamptz" [not null]
+  updated_at "timestamptz" [not null]
+  coop_module_id "uuid" [not null]
+  year "integer" [not null]
+}
+Table production_batches {
+  id "uuid" [pk]
+  batch_code "varchar(255)" [not null]
+  harvest_date "date" [not null]
+  process_date "date" [not null]
+  cane_kg "numeric(10,2)" [not null]
+  juice_liters "numeric(10,2)" [not null]
+  efficiency_percentage "numeric(5,2)"
+  producer_id "uuid" [not null]
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  plot_id "uuid"
+  panela_kg "numeric(10,2)"
+  confitillo_kg "numeric(10,2)"
+  porcentaje_extraccion "numeric(5,2)"
+  cachaza_percentage "numeric(5,2)"
+  cane_density "numeric(5,4)"
+  latitude "float8"
+  longitude "float8"
+  location_text "text"
+  observations "text"
+  registered_by_user_id "varchar(8)"
+}
+Table production_batch_harvest_dates {
+  id "uuid" [pk]
+  production_batch_id "uuid" [not null]
+  harvest_date "date" [not null]
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table batch_temperatures {
+  id "uuid" [pk]
+  production_batch_id "uuid" [not null]
+  temperature "numeric(6,2)" [not null]
+  sequence_number "integer" [not null]
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+  time_between_mieles_minutes "numeric(6,2)"
+}
+Table batch_ph_controls {
+  id "uuid" [pk]
+  production_batch_id "uuid" [not null]
+  record_date "timestamptz"
+  regulator_type "varchar(100)" [not null]
+  ph_initial "numeric(4,2)" [not null]
+  ph_final "numeric(4,2)" [not null]
+  brix "numeric(5,2)"
+  corrective_action "text"
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+  regulator_quantity_kg "numeric(10,2)"
+  regulator_quantity_value "numeric(10,2)"
+  regulator_quantity_unit "varchar(10)"
+}
+Table batch_certs {
+  id "uuid" [pk]
+  name "varchar(100)" [not null]
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  is_active "boolean"
+  exclusion_group_id "uuid"
+  is_default "boolean"
+}
+Table certificate_exclusion_groups {
+  id "uuid" [pk]
+  name "varchar(100)" [not null]
+  display_name "varchar(100)" [not null]
+  description "text"
+  is_required "boolean"
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  is_active "boolean"
+}
+Table production_batch_certs {
+  id "uuid" [pk]
+  production_batch_id "uuid" [not null]
+  batch_cert_id "uuid" [not null]
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+}
+TableGroup campo [color: #2d6a4f, note: 'Productores y producción de campo'] {
+producers
+plots
+producer_quotas
+production_batches
+production_batch_harvest_dates
+batch_temperatures
+batch_ph_controls
+batch_certs
+certificate_exclusion_groups
+production_batch_certs
+}
+Table worker_controls {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  production_batch_id "uuid" [not null]
+  worker_name "text" [not null]
+  work_area "text" [not null]
+  uniform_complete "boolean" [not null]
+  no_makeup "boolean" [not null]
+  nails_short_clean "boolean" [not null]
+  nails_no_polish "boolean" [not null]
+  hands_clean "boolean" [not null]
+  no_jewelry "boolean" [not null]
+  hair_covered "boolean" [not null]
+  no_beard "boolean" [not null]
+  no_wounds "boolean" [not null]
+  observations "text"
+  created_by "varchar(8)" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table worker_control_items {
+  id "uuid" [pk]
+  worker_control_id "uuid"
+  worker_name "text" [not null]
+  uniform_complete "boolean"
+  no_makeup "boolean"
+  nails_short_clean "boolean"
+  nails_no_polish "boolean"
+  hands_clean "boolean"
+  no_jewelry "boolean"
+  hair_covered "boolean"
+  no_beard "boolean"
+  no_wounds "boolean"
+  created_at "timestamptz"
+}
+Table chlorine_residual_controls {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  coop_module_id "uuid" [not null]
+  control_date "date" [not null]
+  control_time "time" [not null]
+  measurement_point_1 "numeric(4,2)" [not null]
+  measurement_point_2 "numeric(4,2)" [not null]
+  corrective_actions "text"
+  observations "text"
+  responsible_person "text" [not null]
+  created_by "uuid" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table cleaning_disinfections {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  coop_module_id "uuid" [not null]
+  cleaning_date "date" [not null]
+  cleaning_types "text[]" [not null]
+  general_observations "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table cleaning_disinfection_items {
+  id "uuid" [pk]
+  cleaning_disinfection_id "uuid" [not null]
+  area_code "varchar(50)" [not null]
+  point_code "varchar(50)" [not null]
+  point_description "text" [not null]
+  uses_chlorine "boolean" [not null]
+  uses_detergent "boolean" [not null]
+  uses_other_product "boolean" [not null]
+  observations "text"
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table pest_controls {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  coop_module_id "uuid" [not null]
+  control_date "date" [not null]
+  created_by "uuid" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table pest_control_bait_records {
+  id "uuid" [pk]
+  pest_control_id "uuid" [not null]
+  product_name "text" [not null]
+  quantity "numeric(10,2)" [not null]
+  unit "text" [not null]
+  bait_stations "jsonb" [not null]
+  bait_observations "text"
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table pest_control_insect_records {
+  id "uuid" [pk]
+  pest_control_id "uuid" [not null]
+  product_name "text" [not null]
+  quantity "numeric(10,2)" [not null]
+  unit "text" [not null]
+  insect_data "jsonb" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table environment_inspections {
+  id "uuid" [pk]
+  coop_module_id "uuid" [not null]
+  inspection_date "date" [not null]
+  cooperative_id "uuid" [not null]
+  created_by "varchar(8)" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table environment_inspection_items {
+  id "uuid" [pk]
+  environment_inspection_id "uuid" [not null]
+  area_code "varchar(50)" [not null]
+  item_code "varchar(50)" [not null]
+  item_description "text" [not null]
+  condition "inspection_condition_enum" [not null]
+  corrective_actions "text"
+  observations "text"
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table equipment_maintenance_records {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  coop_module_id "uuid" [not null]
+  maintenance_date "date" [not null]
+  equipment_name "text" [not null]
+  maintenance_type "text" [not null]
+  maintenance_cause "text" [not null]
+  materials_used "text"
+  duration_hours "numeric(10,2)" [not null]
+  responsible_person "text" [not null]
+  created_by "varchar(8)" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table health_incidents {
+  id "uuid" [pk]
+  coop_module_id "uuid" [not null]
+  employee_name "text" [not null]
+  work_area "text" [not null]
+  registration_date "date" [not null]
+  symptoms_description "text" [not null]
+  action_rest "boolean" [not null]
+  action_medical_attention "boolean" [not null]
+  action_relocation "boolean" [not null]
+  action_medication "boolean" [not null]
+  action_other "boolean" [not null]
+  other_action_detail "text"
+  return_date "date"
+  certificate_presented "boolean" [not null]
+  cooperative_id "uuid" [not null]
+  created_by "varchar(8)" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table stowage_transport_inspections {
+  id "uuid" [pk]
+  exit_registration_id "uuid" [not null]
+  inspection_date "date" [not null]
+  cooperative_id "uuid" [not null]
+  carrier_name "text" [not null]
+  carrier_ruc "varchar(11)"
+  carrier_license "varchar(20)"
+  vehicle_brand "text" [not null]
+  vehicle_plate "varchar(10)" [not null]
+  vehicle_condition "vehicle_condition_enum" [not null]
+  has_spare_tire "boolean" [not null]
+  has_valid_soat "boolean" [not null]
+  has_technical_review "boolean" [not null]
+  has_first_aid_kit "boolean" [not null]
+  has_fire_extinguisher "boolean" [not null]
+  has_gps "boolean" [not null]
+  has_cleaning_supplies "boolean" [not null]
+  floors_clean "boolean" [not null]
+  walls_clean "boolean" [not null]
+  ceilings_clean "boolean" [not null]
+  no_strange_odors "boolean" [not null]
+  tarp_clean "boolean" [not null]
+  pallets_clean "boolean" [not null]
+  sack_clean_condition "sack_condition_enum" [not null]
+  sack_tied_condition "sack_condition_enum" [not null]
+  observations "text"
+  created_by "varchar(8)" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  registered_by_user_id "varchar(8)"
+  formato_codigo "varchar(30)"
+  emitted_by "uuid"
+  emitted_by_name "text"
+  emitted_at "timestamptz"
+  firmantes "jsonb" [not null]
+  status "varchar(20)" [not null]
+}
+TableGroup ccampo [color: #52b788, note: 'Controles de campo (BPM/HYS en módulo)'] {
+worker_controls
+worker_control_items
+chlorine_residual_controls
+cleaning_disinfections
+cleaning_disinfection_items
+pest_controls
+pest_control_bait_records
+pest_control_insect_records
+environment_inspections
+environment_inspection_items
+equipment_maintenance_records
+health_incidents
+stowage_transport_inspections
+}
+Table formatos_control_cloro {
+  id "uuid" [pk]
+  formato_codigo "varchar(30)"
+  cooperative_id "uuid" [not null]
+  module_id "uuid" [not null]
+  date_from "date" [not null]
+  date_to "date" [not null]
+  emitted_by "uuid"
+  emitted_by_name "text"
+  emitted_at "timestamptz"
+  firmantes "jsonb" [not null]
+  status "varchar(20)" [not null]
+  created_at "timestamptz"
+}
+Table formatos_control_mp_ph {
+  id "uuid" [pk]
+  formato_codigo "varchar(30)" [not null]
+  cooperative_id "uuid" [not null]
+  module_id "uuid" [not null]
+  date_from "date" [not null]
+  date_to "date" [not null]
+  emitted_by "uuid"
+  emitted_by_name "text"
+  emitted_at "timestamptz"
+  approved_at "timestamptz"
+  firmantes "jsonb" [not null]
+  status "varchar(20)" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table formatos_control_mp_ph_lotes {
+  formato_id "uuid" [not null]
+  lote_campo_id "uuid" [not null]
+}
+Table formatos_control_personal {
+  id "uuid" [pk]
+  formato_codigo "varchar(30)"
+  cooperative_id "uuid" [not null]
+  production_batch_id "uuid" [not null]
+  emitted_by "uuid"
+  emitted_by_name "text"
+  emitted_at "timestamptz"
+  firmantes "jsonb" [not null]
+  status "varchar(20)" [not null]
+  created_at "timestamptz"
+}
+Table formatos_control_plagas {
+  id "uuid" [pk]
+  formato_codigo "varchar(30)"
+  cooperative_id "uuid" [not null]
+  module_id "uuid" [not null]
+  date_from "date" [not null]
+  date_to "date" [not null]
+  emitted_by "uuid"
+  emitted_by_name "text"
+  emitted_at "timestamptz"
+  firmantes "jsonb" [not null]
+  status "varchar(20)" [not null]
+  created_at "timestamptz"
+}
+Table formatos_inspeccion_ambientes {
+  id "uuid" [pk]
+  formato_codigo "varchar(30)"
+  cooperative_id "uuid" [not null]
+  module_id "uuid" [not null]
+  inspection_id "uuid" [not null]
+  inspection_date "date" [not null]
+  emitted_by "uuid"
+  emitted_by_name "text"
+  emitted_at "timestamptz"
+  firmantes "jsonb" [not null]
+  status "varchar(20)" [not null]
+  created_at "timestamptz"
+}
+Table formatos_limpieza_desinfeccion {
+  id "uuid" [pk]
+  formato_codigo "varchar(30)"
+  cooperative_id "uuid" [not null]
+  module_id "uuid" [not null]
+  date_from "date" [not null]
+  date_to "date" [not null]
+  emitted_by "uuid"
+  emitted_by_name "text"
+  emitted_at "timestamptz"
+  firmantes "jsonb" [not null]
+  status "varchar(20)" [not null]
+  created_at "timestamptz"
+}
+Table formatos_mantenimiento_equipos {
+  id "uuid" [pk]
+  formato_codigo "varchar(30)"
+  cooperative_id "uuid" [not null]
+  module_id "uuid" [not null]
+  date_from "date" [not null]
+  date_to "date" [not null]
+  emitted_by "uuid"
+  emitted_by_name "text"
+  emitted_at "timestamptz"
+  firmantes "jsonb" [not null]
+  status "varchar(20)" [not null]
+  created_at "timestamptz"
+}
+Table formatos_seguimiento_salud {
+  id "uuid" [pk]
+  formato_codigo "varchar(30)"
+  cooperative_id "uuid" [not null]
+  module_id "uuid" [not null]
+  date_from "date" [not null]
+  date_to "date" [not null]
+  emitted_by "uuid"
+  emitted_by_name "text"
+  emitted_at "timestamptz"
+  firmantes "jsonb" [not null]
+  status "varchar(20)" [not null]
+  created_at "timestamptz"
+}
+TableGroup formatos [color: #d97706, note: 'Formatos emitidos de campo'] {
+formatos_control_cloro
+formatos_control_mp_ph
+formatos_control_mp_ph_lotes
+formatos_control_personal
+formatos_control_plagas
+formatos_inspeccion_ambientes
+formatos_limpieza_desinfeccion
+formatos_mantenimiento_equipos
+formatos_seguimiento_salud
+}
+Table exit_registrations {
+  id "uuid" [pk]
+  exit_code "varchar(50)" [not null]
+  document_number "varchar(100)"
+  exit_date "date" [not null]
+  total_kg "numeric(10,2)" [not null]
+  exit_type "varchar(50)" [not null]
+  destination "varchar(100)"
+  notes "text"
+  cooperative_id "uuid" [not null]
+  created_by "varchar(8)" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table exit_items {
+  id "uuid" [pk]
+  exit_registration_id "uuid" [not null]
+  production_batch_id "uuid" [not null]
+  quantity_kg "numeric(10,2)" [not null]
+  is_autoconsumo "boolean" [not null]
+  bags_count "numeric(10,2)"
+  unit_price "numeric(10,2)"
+  total_value "numeric(12,2)"
+  notes "text"
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+  item_document_number "varchar(100)"
+}
+Table inventory_stock {
+  id "uuid" [pk]
+  production_batch_id "uuid" [not null]
+  current_kg "numeric(10,2)" [not null]
+  reserved_kg "numeric(10,2)" [not null]
+  available_kg "numeric(10,2)"
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table product_returns {
+  id "uuid" [pk]
+  production_batch_id "uuid" [not null]
+  cooperative_id "uuid" [not null]
+  client_name "text" [not null]
+  return_date "date" [not null]
+  quantity_kg "numeric" [not null]
+  quantity_sacks "integer" [not null]
+  return_reason "text" [not null]
+  observations "text"
+  created_by "varchar(8)"
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  created_by_web_user_id "uuid"
+  voided_at "timestamptz"
+}
+Table exit_receptions {
+  id "uuid" [pk]
+  exit_registration_id "uuid" [not null]
+  cooperative_id "uuid" [not null]
+  received_by "uuid" [not null]
+  received_at "timestamptz" [not null]
+  notes "text"
+  status "varchar(20)" [not null]
+  created_at "timestamptz"
+}
+Table exit_reception_items {
+  id "uuid" [pk]
+  exit_reception_id "uuid" [not null]
+  exit_item_id "uuid" [not null]
+  quantity_kg_sent "numeric(10,2)" [not null]
+  quantity_kg_received "numeric(10,2)" [not null]
+  discrepancy_kg "numeric(10,2)"
+  discrepancy_reason "text"
+  created_at "timestamptz"
+  cert_status "text"
+}
+Table quality_evaluations {
+  id "uuid" [pk]
+  exit_reception_id "uuid" [not null]
+  exit_item_id "uuid" [not null]
+  cooperative_id "uuid" [not null]
+  evaluated_by "uuid" [not null]
+  evaluated_at "timestamptz" [not null]
+  humidity_pct "numeric(5,2)"
+  impurities_pct "numeric(9,6)"
+  color "varchar(50)"
+  sack_condition "varchar(20)"
+  appearance "varchar(20)"
+  notes "text"
+  created_at "timestamptz"
+  approval_status "varchar(30)"
+  rejection_reason "text"
+  extra_data "jsonb"
+  rejected_kg "numeric(10,2)" [not null]
+  rejected_by "uuid"
+  rejected_at "timestamptz"
+  product_return_id "uuid"
+  impurities_mgkg "numeric(10,2)"
+}
+TableGroup salidas [color: #b45309, note: 'Salidas, inventario y recepción en planta'] {
+exit_registrations
+exit_items
+inventory_stock
+product_returns
+exit_receptions
+exit_reception_items
+quality_evaluations
+}
+Table plant_orders {
+  id "uuid" [pk]
+  order_code "text" [not null]
+  market "text" [not null]
+  status "text" [not null]
+  cooperative_id "uuid" [not null]
+  created_by "uuid" [not null]
+  notes "text"
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  total_kg "numeric(10,3)"
+  container_id "uuid"
+  extra_data "jsonb"
+  sale_number "text"
+  product "text" [not null]
+  client_id "uuid"
+  client_order_number "text"
+  tamizado_fecha_inicio "date"
+  tamizado_fecha_fin "date"
+  envasado_fecha_inicio "date"
+  envasado_fecha_fin "date"
+  fecha_envio "date"
+  internal_container_number "text"
+  sale_type "text"
+}
+Table plant_production_batches {
+  id "uuid" [pk]
+  batch_code "text" [not null]
+  order_id "uuid" [not null]
+  brand "text" [not null]
+  status "text" [not null]
+  cooperative_id "uuid" [not null]
+  notes "text"
+  created_at "timestamptz"
+  description "text"
+  best_before_date "date"
+  pallet_count "integer"
+  client_batch_number "text"
+  boxes_count "integer"
+  packaging_type "text"
+  packaging_count "integer"
+  packaging_kg "numeric(10,3)"
+  tamizada_kg "numeric(10,3)" [not null]
+  envasado_turno "text"
+  envasado_qq "numeric(10,3)"
+  envasado_descarte_barrido_kg "numeric(10,3)"
+  envasado_cajas_envasadas "integer"
+  envasado_cajas_descarte "integer"
+  envasado_bolsas_envasadas "integer"
+  envasado_sacos_envasados "integer"
+  envasado_bolsas_rechazo_metal "integer"
+  envasado_bolsas_descarte_fabrica "integer"
+  envasado_bolsas_descarte_sellado "integer"
+  envasado_bolsas_descarte_codificado "integer"
+  envasado_registered_by "uuid"
+  envasado_registered_at "timestamptz"
+  product_catalog_id "uuid"
+  calidad_humedad_pct "numeric(5,2)"
+  calidad_impurezas_pct "numeric(9,6)"
+  calidad_color "text"
+  calidad_sabor "text"
+  calidad_textura "text"
+  calidad_observaciones "text"
+  calidad_registered_by "uuid"
+  calidad_registered_at "timestamptz"
+  liberacion_unidades_por_lote "integer"
+  liberacion_formato_presentacion "text"
+  liberacion_muestreado_por "text"
+  liberacion_resultado "text"
+  calidad_impurezas_mgkg "numeric(10,2)"
+  liberacion_formato_codigo "text"
+}
+Table plant_batch_certs {
+  id "uuid" [pk]
+  plant_batch_id "uuid" [not null]
+  batch_cert_id "uuid" [not null]
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+}
+Table plant_batch_bunques {
+  id "uuid" [pk]
+  plant_batch_id "uuid"
+  bunque_number "text" [not null]
+  tamizada_kg "numeric(10,3)"
+  reproceso_kg "numeric(10,3)"
+  descarte_kg "numeric(10,3)"
+  merma_kg "numeric(10,3)"
+  processed_by "uuid"
+  processed_at "timestamptz"
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz" [not null]
+  tamizada_sacos "integer"
+  reproceso_sacos "integer"
+  descarte_sacos "integer"
+  campaign_id "uuid"
+}
+Table plant_bunque_batch_allocations {
+  id "uuid" [pk]
+  bunque_id "uuid" [not null]
+  plant_batch_id "uuid" [not null]
+  kg "numeric(10,3)" [not null]
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_homogenization_inputs {
+  id "uuid" [pk]
+  source_exit_item_id "uuid" [not null]
+  quantity_kg "numeric(10,3)" [not null]
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+  bunque_id "uuid" [not null]
+}
+Table plant_batch_weight_seal_forms {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  plant_batch_id "uuid" [not null]
+  control_date "date" [not null]
+  turno "text" [not null]
+  status "text" [not null]
+  responsible_person "text" [not null]
+  final_observations "text"
+  created_by "uuid" [not null]
+  closed_by "uuid"
+  closed_at "timestamptz"
+  created_at "timestamptz" [not null]
+}
+Table plant_batch_weight_seal_checks {
+  id "uuid" [pk]
+  form_id "uuid" [not null]
+  check_number "integer" [not null]
+  hora_label "text" [not null]
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_batch_weight_seal_samples {
+  id "uuid" [pk]
+  check_id "uuid" [not null]
+  muestra_number "integer" [not null]
+  peso_gr "numeric(6,2)"
+  sellado "text"
+  limpieza "boolean"
+}
+Table plant_batch_foreign_object_forms {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  plant_batch_id "uuid" [not null]
+  control_date "date" [not null]
+  status "text" [not null]
+  responsible_person "text" [not null]
+  final_observations "text"
+  created_by "uuid" [not null]
+  closed_by "uuid"
+  closed_at "timestamptz"
+  created_at "timestamptz"
+  updated_at "timestamptz"
+}
+Table plant_batch_foreign_object_checks {
+  id "uuid" [pk]
+  form_id "uuid" [not null]
+  inspection_number "integer" [not null]
+  check_time "time" [not null]
+  bags_separated "integer" [not null]
+  test_type "text"
+  conforme "boolean"
+  created_by "uuid" [not null]
+  created_at "timestamptz"
+  check_type "text" [not null]
+}
+TableGroup planta [color: #1d4ed8, note: 'Planta: órdenes, lotes y procesamiento'] {
+plant_orders
+plant_production_batches
+plant_batch_certs
+plant_batch_bunques
+plant_bunque_batch_allocations
+plant_homogenization_inputs
+plant_batch_weight_seal_forms
+plant_batch_weight_seal_checks
+plant_batch_weight_seal_samples
+plant_batch_foreign_object_forms
+plant_batch_foreign_object_checks
+}
+Table plant_clients {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  name "text" [not null]
+  code "text"
+  is_active "boolean" [not null]
+  created_at "timestamptz" [not null]
+  updated_at "timestamptz" [not null]
+  default_packaging_type "text"
+  default_units_per_box "integer"
+  default_packaging_kg "numeric"
+  default_pallet_count "integer"
+}
+Table plant_brand_catalog {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  label "text" [not null]
+  created_at "timestamptz" [not null]
+  is_active "boolean" [not null]
+}
+Table plant_product_catalog {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  client_id "uuid"
+  brand_id "uuid"
+  code "text" [not null]
+  description "text" [not null]
+  packaging_type "text"
+  packaging_kg "numeric"
+  is_active "boolean" [not null]
+  created_at "timestamptz" [not null]
+  updated_at "timestamptz" [not null]
+}
+Table plant_personnel {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  first_name "text" [not null]
+  last_name "text" [not null]
+  is_active "boolean" [not null]
+  created_at "timestamptz" [not null]
+}
+TableGroup catalogos [color: #6d28d9, note: 'Planta: catálogos'] {
+plant_clients
+plant_brand_catalog
+plant_product_catalog
+plant_personnel
+}
+Table plant_containers {
+  id "uuid" [pk]
+  container_number "text"
+  seal_number "varchar(30)"
+  container_size "varchar(10)"
+  max_capacity_kg "numeric(10,3)"
+  booking_number "varchar(50)"
+  bill_of_lading "varchar(50)"
+  shipping_line "varchar(100)"
+  destination_port "varchar(100)"
+  departure_date "date"
+  estimated_arrival "date"
+  status "text" [not null]
+  notes "text"
+  cooperative_id "uuid" [not null]
+  created_by "uuid" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  extra_data "jsonb"
+}
+Table plant_container_loadings {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  container_id "uuid" [not null]
+  status "text" [not null]
+  responsible_person "text"
+  documento_number "text"
+  tara_kg "numeric(10,2)"
+  payload_kg "numeric(10,2)"
+  placa_camion "text"
+  placa_carreta "text"
+  precinto_inicial "text"
+  precinto_linea "text"
+  precinto_norandino "text"
+  hora_inicio "time"
+  hora_fin "time"
+  limpio "boolean"
+  abolladuras_internas "boolean"
+  abolladuras_internas_cant "integer"
+  abolladuras_externas "boolean"
+  abolladuras_externas_cant "integer"
+  contenedor_forrado "boolean"
+  correcto_forrado "boolean"
+  libre_olores "boolean"
+  libre_plagas "boolean"
+  observaciones_parte_interna "text"
+  observaciones_parte_externa "text"
+  envases_limpios "boolean"
+  peso_correcto "boolean"
+  etiquetado_correcto "boolean"
+  cierre_sellado_adecuado "boolean"
+  accion_correctiva "text"
+  final_observations "text"
+  created_by "uuid" [not null]
+  closed_by "uuid"
+  closed_at "timestamptz"
+  created_at "timestamptz" [not null]
+  updated_at "timestamptz" [not null]
+}
+Table plant_container_loading_pallets {
+  id "uuid" [pk]
+  loading_id "uuid" [not null]
+  pallet_number "text" [not null]
+  boxes_count "integer"
+  plant_batch_id "uuid"
+  humidity_pct "numeric(5,2)"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+  lado "text"
+}
+Table plant_container_loading_people {
+  id "uuid" [pk]
+  loading_id "uuid" [not null]
+  full_name "text" [not null]
+  dni "text"
+  role_label "text"
+  created_at "timestamptz" [not null]
+}
+Table plant_dispatches {
+  id "uuid" [pk]
+  container_id "uuid" [not null]
+  dispatch_date "date" [not null]
+  dispatch_code "text" [not null]
+  loaded_by "uuid" [not null]
+  verified_by "uuid"
+  total_loaded_kg "numeric(10,3)"
+  seal_verified "boolean"
+  temperature_at_load "numeric(5,2)"
+  humidity_at_load "numeric(5,2)"
+  notes "text"
+  cooperative_id "uuid" [not null]
+  created_at "timestamptz"
+  updated_at "timestamptz"
+  extra_data "jsonb"
+}
+Table plant_dispatch_items {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  dispatch_id "uuid" [not null]
+  plant_batch_id "uuid" [not null]
+  quantity_kg "numeric(10,3)" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_packing_list_nacional_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  container_id "uuid" [not null]
+  status "text" [not null]
+  responsible_person "text"
+  packing_list_numero "text"
+  guia_tramo_interno "text"
+  guia_tramo_final "text"
+  final_observations "text"
+  created_by "uuid" [not null]
+  closed_by "uuid"
+  closed_at "timestamptz"
+  created_at "timestamptz" [not null]
+  updated_at "timestamptz" [not null]
+}
+Table plant_transport_unit_controls_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  container_id "uuid" [not null]
+  control_date "date" [not null]
+  lugar_partida "text"
+  lugar_destino "text"
+  guia_remision "text"
+  transportista_razon_social "text"
+  transportista_constancia_mtc "text"
+  chofer_nombre "text"
+  chofer_licencia "text"
+  vehiculo_marca "text"
+  vehiculo_placa "text"
+  vehiculo_tipo "text"
+  cuenta_soat "boolean" [not null]
+  cuenta_revision_tecnica "boolean" [not null]
+  cuenta_botiquin "boolean" [not null]
+  cuenta_extintor "boolean" [not null]
+  vehiculo_limpio "boolean" [not null]
+  libre_olores_extranos "boolean" [not null]
+  carga_en_buen_estado "boolean" [not null]
+  observaciones_vehiculo "text"
+  accion_correctiva_vehiculo "text"
+  presentacion "text"
+  total_unidades "integer"
+  limpieza_carga_limpio "boolean" [not null]
+  hermeticidad_carga "text"
+  transporto_otros_productos "boolean" [not null]
+  evidencia_combustible "boolean" [not null]
+  libre_fisuras "boolean" [not null]
+  observaciones_carga "text"
+  desinfeccion_producto "text"
+  responsable_desinfeccion "text"
+  observaciones_generales "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+  updated_at "timestamptz" [not null]
+}
+Table plant_transport_unit_control_estibadores_caes {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  full_name "text" [not null]
+  dni "text"
+  vestimenta_completa "boolean" [not null]
+  epp_zapatos_cerrados "boolean" [not null]
+  epp_mascarilla "boolean" [not null]
+  epp_guantes "boolean" [not null]
+  epp_otro "text"
+  observacion "text"
+  accion_correctiva "text"
+  created_at "timestamptz" [not null]
+}
+TableGroup despacho [color: #0e7490, note: 'Planta: contenedores, carga y despacho'] {
+plant_containers
+plant_container_loadings
+plant_container_loading_pallets
+plant_container_loading_people
+plant_dispatches
+plant_dispatch_items
+plant_packing_list_nacional_caes
+plant_transport_unit_controls_caes
+plant_transport_unit_control_estibadores_caes
+}
+Table plant_hygiene_controls {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  turno "text" [not null]
+  area "text" [not null]
+  responsible_person "text"
+  observations "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+  formato_codigo "text"
+}
+Table plant_hygiene_control_workers {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  personnel_id "uuid" [not null]
+  attended "boolean" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_hygiene_control_criteria {
+  id "uuid" [pk]
+  control_worker_id "uuid" [not null]
+  item_code "text" [not null]
+  status "text" [not null]
+}
+Table plant_cleaning_controls {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  year "integer" [not null]
+  month "integer" [not null]
+  responsible_person "text"
+  observations "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_cleaning_checks {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  area "text" [not null]
+  element "text" [not null]
+  check_type "text" [not null]
+  day "integer" [not null]
+  status "text" [not null]
+}
+Table plant_equipment_cleaning_controls {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  year "integer" [not null]
+  month "integer" [not null]
+  responsible_person "text"
+  observations "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_equipment_cleaning_checks {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  area "text" [not null]
+  equipment "text" [not null]
+  day "integer" [not null]
+  status "text" [not null]
+  products "text[]" [not null]
+}
+Table plant_cleaning_verification_controls {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  responsible_person "text"
+  observations "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+  formato_codigo "text"
+}
+Table plant_cleaning_verification_checks {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  area "text" [not null]
+  item "text" [not null]
+  status "text" [not null]
+  corrective_action "text"
+}
+Table plant_chlorine_residual_controls {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  responsible_person "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+  formato_codigo "text"
+}
+Table plant_chlorine_residual_checks {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  point_code "text" [not null]
+  result_ppm "numeric(5,2)"
+  observations "text"
+  corrective_action "text"
+}
+Table plant_pest_controls {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  responsible_person "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+  ambientes_equipo_personal_ok "text"
+  ambientes_equipo_personal_observaciones "text"
+  formato_codigo "text"
+}
+Table plant_rodent_trap_checks {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  device_type "text" [not null]
+  device_code "text" [not null]
+  operatividad "text"
+  evidencia "text"
+  atrapados "text"
+  cantidad_atrapada "integer"
+  observations "text"
+  corrective_action "text"
+}
+Table plant_light_trap_checks {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  trap_code "text" [not null]
+  operatividad "text"
+  md_count "integer"
+  mc_count "integer"
+  ab_count "integer"
+  e_count "integer"
+  p_count "integer"
+  z_count "integer"
+  mq_count "integer"
+  av_count "integer"
+  l_count "integer"
+  otros_count "integer"
+  observations "text"
+  corrective_action "text"
+}
+TableGroup cnor [color: #b91c1c, note: 'Controles de planta – NORANDINO'] {
+plant_hygiene_controls
+plant_hygiene_control_workers
+plant_hygiene_control_criteria
+plant_cleaning_controls
+plant_cleaning_checks
+plant_equipment_cleaning_controls
+plant_equipment_cleaning_checks
+plant_cleaning_verification_controls
+plant_cleaning_verification_checks
+plant_chlorine_residual_controls
+plant_chlorine_residual_checks
+plant_pest_controls
+plant_rodent_trap_checks
+plant_light_trap_checks
+}
+Table plant_general_cleaning_controls {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  year "integer" [not null]
+  month "integer" [not null]
+  responsible_person "text"
+  observations "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+  formato_codigo "text"
+}
+Table plant_general_cleaning_checks {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  area "text" [not null]
+  item "text" [not null]
+  day "integer" [not null]
+  status "text" [not null]
+}
+Table plant_hygiene_controls_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  year "integer" [not null]
+  month "integer" [not null]
+  turno "text" [not null]
+  responsible_person "text"
+  observations "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+  formato_codigo "text"
+}
+Table plant_hygiene_checks_caes {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  personnel_id "uuid" [not null]
+  zona "text" [not null]
+  item "text" [not null]
+  day "integer" [not null]
+  status "text" [not null]
+}
+Table plant_handwashing_controls_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  area "text"
+  hora_inicio "time"
+  hora_fin "time"
+  observaciones "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_handwashing_person_checks_caes {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  personnel_id "uuid" [not null]
+  r1 "boolean"
+  r2 "boolean"
+  r3 "boolean"
+  r4 "boolean"
+  r5 "boolean"
+  observaciones "text"
+}
+Table plant_chlorine_controls_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  observations "text"
+  formato_codigo "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_chlorine_prep_events_caes {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  event_time "time"
+  concentracion_deseada_ppm "numeric"
+  cantidad_agua_l "numeric"
+  cantidad_cloro_ml "numeric"
+  responsable_cloracion "text"
+  observations "text"
+}
+Table plant_chlorine_monitoring_events_caes {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  event_time "time"
+  sampling_point "text"
+  result_ppm "numeric"
+  responsable_medicion "text"
+  corrective_action "text"
+}
+Table plant_pest_controls_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  year "integer" [not null]
+  month "integer" [not null]
+  cebo_producto "text"
+  cebo_cantidad "text"
+  insecto_producto "text"
+  insecto_cantidad "text"
+  responsible_person "text"
+  observations "text"
+  formato_codigo "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_pest_rodent_events_caes {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  trap_code "text" [not null]
+  event_date "date"
+  trap_active "boolean"
+  estado "text[]" [not null]
+  observations "text"
+}
+Table plant_pest_insect_events_caes {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  insectocutor_code "text" [not null]
+  area "text"
+  event_date "date"
+  species "text[]" [not null]
+  observations "text"
+}
+Table plant_solution_prep_controls_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  preparacion_de "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_solution_prep_events_caes {
+  id "uuid" [pk]
+  control_id "uuid" [not null]
+  personnel_id "uuid" [not null]
+  concentracion_insumo "text"
+  cantidad_insumo "text"
+  resultado_volumen "text"
+  concentracion_final "text"
+  destino_uso "text"
+}
+Table plant_balance_calibration_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  balance_code "text"
+  area "text"
+  equipment_name "text"
+  error_maximo_permitido "text"
+  peso_patron "text"
+  p1_peso "numeric"
+  p1_error "numeric"
+  p2_peso "numeric"
+  p2_error "numeric"
+  p3_peso "numeric"
+  p3_error "numeric"
+  p4_peso "numeric"
+  p4_error "numeric"
+  p5_peso "numeric"
+  p5_error "numeric"
+  error_promedio "numeric"
+  estado "text"
+  acciones_correctivas "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_sieve_monitoring_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  monitoring_date "date" [not null]
+  lote_code "text"
+  sin_abolladuras "boolean" [not null]
+  sin_fisuras "boolean" [not null]
+  sin_desgaste "boolean" [not null]
+  sin_deformaciones "boolean" [not null]
+  sin_obstrucciones "boolean" [not null]
+  hubo_desviacion "boolean" [not null]
+  causa_raiz "text"
+  acciones_correctivas "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+  plant_batch_id "uuid" [not null]
+}
+Table plant_temp_humidity_control_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  ubicacion "text" [not null]
+  t1 "numeric"
+  t2 "numeric"
+  t3 "numeric"
+  t_promedio "numeric"
+  hr1 "numeric"
+  hr2 "numeric"
+  hr3 "numeric"
+  hr_promedio "numeric"
+  accion_correctiva "text"
+  observaciones "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_waste_management_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  control_time "time"
+  es_organico "boolean" [not null]
+  es_aprovechable "boolean" [not null]
+  es_no_aprovechable "boolean" [not null]
+  es_peligroso "boolean" [not null]
+  origen_residuo "text[]"
+  cantidad_bolsas "integer"
+  disposicion_recolector_municipal "boolean" [not null]
+  disposicion_otro "text"
+  observacion "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+}
+Table plant_packaging_seal_control_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  control_time "time"
+  presentacion "text"
+  lote_code "text"
+  destino "text"
+  cliente "text"
+  materias_extranas_ok "boolean" [not null]
+  sellado_costura_ok "boolean" [not null]
+  peso_completo_ok "boolean" [not null]
+  fecha_vencimiento_ok "boolean" [not null]
+  lote_legible_ok "boolean" [not null]
+  limpieza_envase_ok "boolean" [not null]
+  observaciones "text"
+  acciones_correctivas "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+  plant_batch_id "uuid" [not null]
+  formato_codigo "text"
+}
+Table plant_container_tightness_control_caes {
+  id "uuid" [pk]
+  cooperative_id "uuid" [not null]
+  control_date "date" [not null]
+  lote_code "text"
+  tamano_lote "integer"
+  nivel_inspeccion "text"
+  letra_codigo "text"
+  nivel_calidad_aceptable "text"
+  tamano_muestra "integer"
+  numero_aceptacion "integer"
+  numero_rechazo "integer"
+  producto_conforme "integer"
+  producto_no_conforme "integer"
+  accion_tomada "text"
+  acciones_correctivas "text"
+  created_by "uuid" [not null]
+  created_at "timestamptz" [not null]
+  plant_batch_id "uuid" [not null]
+}
+TableGroup ccaes [color: #be185d, note: 'Controles de planta – CAES (BPM/HYS)'] {
+plant_general_cleaning_controls
+plant_general_cleaning_checks
+plant_hygiene_controls_caes
+plant_hygiene_checks_caes
+plant_handwashing_controls_caes
+plant_handwashing_person_checks_caes
+plant_chlorine_controls_caes
+plant_chlorine_prep_events_caes
+plant_chlorine_monitoring_events_caes
+plant_pest_controls_caes
+plant_pest_rodent_events_caes
+plant_pest_insect_events_caes
+plant_solution_prep_controls_caes
+plant_solution_prep_events_caes
+plant_balance_calibration_caes
+plant_sieve_monitoring_caes
+plant_temp_humidity_control_caes
+plant_waste_management_caes
+plant_packaging_seal_control_caes
+plant_container_tightness_control_caes
+}
+Ref: batch_certs.exclusion_group_id > certificate_exclusion_groups.id
+Ref: batch_ph_controls.production_batch_id > production_batches.id
+Ref: batch_temperatures.production_batch_id > production_batches.id
+Ref: cleaning_disinfection_items.cleaning_disinfection_id > cleaning_disinfections.id
+Ref: environment_inspection_items.environment_inspection_id > environment_inspections.id
+Ref: exit_items.exit_registration_id > exit_registrations.id
+Ref: exit_items.production_batch_id > production_batches.id
+Ref: exit_reception_items.exit_item_id > exit_items.id
+Ref: exit_reception_items.exit_reception_id > exit_receptions.id
+Ref: exit_receptions.exit_registration_id > exit_registrations.id
+Ref: formatos_control_mp_ph_lotes.formato_id > formatos_control_mp_ph.id
+Ref: formatos_control_mp_ph_lotes.lote_campo_id > production_batches.id
+Ref: formatos_control_personal.production_batch_id > production_batches.id
+Ref: formatos_inspeccion_ambientes.inspection_id > environment_inspections.id
+Ref: inventory_stock.production_batch_id > production_batches.id
+Ref: plant_batch_bunques.campaign_id > campaigns.id
+Ref: plant_batch_bunques.plant_batch_id > plant_production_batches.id
+Ref: plant_bunque_batch_allocations.bunque_id > plant_batch_bunques.id
+Ref: plant_bunque_batch_allocations.plant_batch_id > plant_production_batches.id
+Ref: plant_batch_foreign_object_checks.form_id > plant_batch_foreign_object_forms.id
+Ref: plant_batch_foreign_object_forms.plant_batch_id > plant_production_batches.id
+Ref: production_batch_harvest_dates.production_batch_id > production_batches.id
+Ref: plant_batch_weight_seal_checks.form_id > plant_batch_weight_seal_forms.id
+Ref: plant_batch_weight_seal_forms.plant_batch_id > plant_production_batches.id
+Ref: plant_batch_weight_seal_samples.check_id > plant_batch_weight_seal_checks.id
+Ref: plant_cleaning_checks.control_id > plant_cleaning_controls.id
+Ref: plant_container_loadings.container_id > plant_containers.id
+Ref: plant_container_loading_pallets.loading_id > plant_container_loadings.id
+Ref: plant_container_loading_pallets.plant_batch_id > plant_production_batches.id
+Ref: plant_container_loading_people.loading_id > plant_container_loadings.id
+Ref: plant_chlorine_monitoring_events_caes.control_id > plant_chlorine_controls_caes.id
+Ref: plant_chlorine_prep_events_caes.control_id > plant_chlorine_controls_caes.id
+Ref: plant_chlorine_residual_checks.control_id > plant_chlorine_residual_controls.id
+Ref: plant_cleaning_verification_checks.control_id > plant_cleaning_verification_controls.id
+Ref: plant_dispatch_items.dispatch_id > plant_dispatches.id
+Ref: plant_dispatch_items.plant_batch_id > plant_production_batches.id
+Ref: plant_equipment_cleaning_checks.control_id > plant_equipment_cleaning_controls.id
+Ref: pest_control_bait_records.pest_control_id > pest_controls.id
+Ref: pest_control_insect_records.pest_control_id > pest_controls.id
+Ref: plant_general_cleaning_checks.control_id > plant_general_cleaning_controls.id
+Ref: plant_hygiene_control_criteria.control_worker_id > plant_hygiene_control_workers.id
+Ref: plant_hygiene_checks_caes.control_id > plant_hygiene_controls_caes.id
+Ref: plant_hygiene_checks_caes.personnel_id > plant_personnel.id
+Ref: plant_hygiene_control_workers.control_id > plant_hygiene_controls.id
+Ref: plant_hygiene_control_workers.personnel_id > plant_personnel.id
+Ref: plant_handwashing_person_checks_caes.control_id > plant_handwashing_controls_caes.id
+Ref: plant_handwashing_person_checks_caes.personnel_id > plant_personnel.id
+Ref: plant_batch_certs.plant_batch_id > plant_production_batches.id
+Ref: plant_batch_certs.batch_cert_id > batch_certs.id
+Ref: plant_container_tightness_control_caes.plant_batch_id > plant_production_batches.id
+Ref: plant_dispatches.container_id > plant_containers.id
+Ref: plant_homogenization_inputs.bunque_id > plant_batch_bunques.id
+Ref: plant_homogenization_inputs.source_exit_item_id > exit_items.id
+Ref: plant_orders.client_id > plant_clients.id
+Ref: plant_orders.container_id > plant_containers.id
+Ref: plant_packaging_seal_control_caes.plant_batch_id > plant_production_batches.id
+Ref: plant_product_catalog.brand_id > plant_brand_catalog.id
+Ref: plant_product_catalog.client_id > plant_clients.id
+Ref: plant_production_batches.order_id > plant_orders.id
+Ref: plant_production_batches.product_catalog_id > plant_product_catalog.id
+Ref: plant_sieve_monitoring_caes.plant_batch_id > plant_production_batches.id
+Ref: plant_packing_list_nacional_caes.container_id > plant_containers.id
+Ref: plots.producer_id > producers.id
+Ref: plant_light_trap_checks.control_id > plant_pest_controls.id
+Ref: plant_pest_insect_events_caes.control_id > plant_pest_controls_caes.id
+Ref: plant_pest_rodent_events_caes.control_id > plant_pest_controls_caes.id
+Ref: producer_quotas.batch_cert_id > batch_certs.id
+Ref: producer_quotas.producer_id > producers.id
+Ref: product_returns.production_batch_id > production_batches.id
+Ref: production_batch_certs.batch_cert_id > batch_certs.id
+Ref: production_batch_certs.production_batch_id > production_batches.id
+Ref: production_batches.plot_id > plots.id
+Ref: production_batches.producer_id > producers.id
+Ref: plant_rodent_trap_checks.control_id > plant_pest_controls.id
+Ref: plant_solution_prep_events_caes.control_id > plant_solution_prep_controls_caes.id
+Ref: plant_solution_prep_events_caes.personnel_id > plant_personnel.id
+Ref: plant_transport_unit_controls_caes.container_id > plant_containers.id
+Ref: plant_transport_unit_control_estibadores_caes.control_id > plant_transport_unit_controls_caes.id
+Ref: quality_evaluations.exit_item_id > exit_items.id
+Ref: quality_evaluations.exit_reception_id > exit_receptions.id
+Ref: quality_evaluations.product_return_id > product_returns.id
+Ref: stowage_transport_inspections.exit_registration_id > exit_registrations.id
+Ref: worker_control_items.worker_control_id > worker_controls.id
+Ref: worker_controls.production_batch_id > production_batches.id
+
+// Relaciones con cooperativa, módulo y usuarios (extraídas de las migraciones)
+Ref: certified_workers.coop_module_id > coop_modules.id
+Ref: chlorine_residual_controls.coop_module_id > coop_modules.id
+Ref: cleaning_disinfections.coop_module_id > coop_modules.id
+Ref: environment_inspections.coop_module_id > coop_modules.id
+Ref: equipment_maintenance_records.coop_module_id > coop_modules.id
+Ref: formatos_control_cloro.module_id > coop_modules.id
+Ref: formatos_control_mp_ph.module_id > coop_modules.id
+Ref: formatos_control_plagas.module_id > coop_modules.id
+Ref: formatos_inspeccion_ambientes.module_id > coop_modules.id
+Ref: formatos_limpieza_desinfeccion.module_id > coop_modules.id
+Ref: formatos_mantenimiento_equipos.module_id > coop_modules.id
+Ref: formatos_seguimiento_salud.module_id > coop_modules.id
+Ref: health_incidents.coop_module_id > coop_modules.id
+Ref: pest_controls.coop_module_id > coop_modules.id
+Ref: producer_quotas.coop_module_id > coop_modules.id
+Ref: producers.coop_module_id > coop_modules.id
+Ref: user_module_assignments.coop_module_id > coop_modules.id
+Ref: users.coop_module_id > coop_modules.id
+Ref: batch_certs.cooperative_id > cooperatives.id
+Ref: batch_ph_controls.cooperative_id > cooperatives.id
+Ref: batch_temperatures.cooperative_id > cooperatives.id
+Ref: campaigns.cooperative_id > cooperatives.id
+Ref: certificate_exclusion_groups.cooperative_id > cooperatives.id
+Ref: certified_workers.cooperative_id > cooperatives.id
+Ref: chlorine_residual_controls.cooperative_id > cooperatives.id
+Ref: cleaning_disinfections.cooperative_id > cooperatives.id
+Ref: coop_modules.cooperative_id > cooperatives.id
+Ref: exit_items.cooperative_id > cooperatives.id
+Ref: exit_receptions.cooperative_id > cooperatives.id
+Ref: form_configurations.cooperative_id > cooperatives.id
+Ref: formatos_control_cloro.cooperative_id > cooperatives.id
+Ref: formatos_control_mp_ph.cooperative_id > cooperatives.id
+Ref: formatos_control_personal.cooperative_id > cooperatives.id
+Ref: formatos_control_plagas.cooperative_id > cooperatives.id
+Ref: formatos_inspeccion_ambientes.cooperative_id > cooperatives.id
+Ref: formatos_limpieza_desinfeccion.cooperative_id > cooperatives.id
+Ref: formatos_mantenimiento_equipos.cooperative_id > cooperatives.id
+Ref: formatos_seguimiento_salud.cooperative_id > cooperatives.id
+Ref: inventory_stock.cooperative_id > cooperatives.id
+Ref: pest_controls.cooperative_id > cooperatives.id
+Ref: plant_balance_calibration_caes.cooperative_id > cooperatives.id
+Ref: plant_batch_foreign_object_forms.cooperative_id > cooperatives.id
+Ref: plant_batch_weight_seal_forms.cooperative_id > cooperatives.id
+Ref: plant_brand_catalog.cooperative_id > cooperatives.id
+Ref: plant_chlorine_controls_caes.cooperative_id > cooperatives.id
+Ref: plant_chlorine_residual_controls.cooperative_id > cooperatives.id
+Ref: plant_cleaning_controls.cooperative_id > cooperatives.id
+Ref: plant_cleaning_verification_controls.cooperative_id > cooperatives.id
+Ref: plant_clients.cooperative_id > cooperatives.id
+Ref: plant_container_loadings.cooperative_id > cooperatives.id
+Ref: plant_container_tightness_control_caes.cooperative_id > cooperatives.id
+Ref: plant_dispatch_items.cooperative_id > cooperatives.id
+Ref: plant_equipment_cleaning_controls.cooperative_id > cooperatives.id
+Ref: plant_general_cleaning_controls.cooperative_id > cooperatives.id
+Ref: plant_handwashing_controls_caes.cooperative_id > cooperatives.id
+Ref: plant_hygiene_controls.cooperative_id > cooperatives.id
+Ref: plant_hygiene_controls_caes.cooperative_id > cooperatives.id
+Ref: plant_packaging_seal_control_caes.cooperative_id > cooperatives.id
+Ref: plant_packing_list_nacional_caes.cooperative_id > cooperatives.id
+Ref: plant_personnel.cooperative_id > cooperatives.id
+Ref: plant_pest_controls.cooperative_id > cooperatives.id
+Ref: plant_pest_controls_caes.cooperative_id > cooperatives.id
+Ref: plant_product_catalog.cooperative_id > cooperatives.id
+Ref: plant_sieve_monitoring_caes.cooperative_id > cooperatives.id
+Ref: plant_solution_prep_controls_caes.cooperative_id > cooperatives.id
+Ref: plant_temp_humidity_control_caes.cooperative_id > cooperatives.id
+Ref: plant_transport_unit_controls_caes.cooperative_id > cooperatives.id
+Ref: plant_waste_management_caes.cooperative_id > cooperatives.id
+Ref: producer_quotas.cooperative_id > cooperatives.id
+Ref: producers.cooperative_id > cooperatives.id
+Ref: production_batch_certs.cooperative_id > cooperatives.id
+Ref: production_batch_harvest_dates.cooperative_id > cooperatives.id
+Ref: quality_evaluations.cooperative_id > cooperatives.id
+Ref: users.cooperative_id > cooperatives.id
+Ref: web_users.cooperative_id > cooperatives.id
+Ref: environment_inspections.cooperative_id > users.cooperative_id
+Ref: environment_inspections.created_by > users.user_id
+Ref: equipment_maintenance_records.cooperative_id > users.cooperative_id
+Ref: equipment_maintenance_records.created_by > users.user_id
+Ref: exit_registrations.cooperative_id > users.cooperative_id
+Ref: exit_registrations.created_by > users.user_id
+Ref: health_incidents.cooperative_id > users.cooperative_id
+Ref: health_incidents.created_by > users.user_id
+Ref: product_returns.cooperative_id > users.cooperative_id
+Ref: product_returns.created_by > users.user_id
+Ref: production_batches.cooperative_id > users.cooperative_id
+Ref: production_batches.registered_by_user_id > users.user_id
+Ref: stowage_transport_inspections.registered_by_user_id > users.user_id
+Ref: stowage_transport_inspections.cooperative_id > users.cooperative_id
+Ref: stowage_transport_inspections.created_by > users.user_id
+Ref: user_module_assignments.user_id > users.user_id
+Ref: user_module_assignments.cooperative_id > users.cooperative_id
+Ref: worker_controls.cooperative_id > users.cooperative_id
+Ref: worker_controls.created_by > users.user_id
+Ref: exit_receptions.received_by > web_users.id
+Ref: plant_balance_calibration_caes.created_by > web_users.id
+Ref: plant_batch_foreign_object_checks.created_by > web_users.id
+Ref: plant_batch_foreign_object_forms.created_by > web_users.id
+Ref: plant_batch_foreign_object_forms.closed_by > web_users.id
+Ref: plant_batch_weight_seal_checks.created_by > web_users.id
+Ref: plant_batch_weight_seal_forms.created_by > web_users.id
+Ref: plant_batch_weight_seal_forms.closed_by > web_users.id
+Ref: plant_chlorine_controls_caes.created_by > web_users.id
+Ref: plant_chlorine_residual_controls.created_by > web_users.id
+Ref: plant_cleaning_controls.created_by > web_users.id
+Ref: plant_cleaning_verification_controls.created_by > web_users.id
+Ref: plant_container_loading_pallets.created_by > web_users.id
+Ref: plant_container_loadings.created_by > web_users.id
+Ref: plant_container_loadings.closed_by > web_users.id
+Ref: plant_container_tightness_control_caes.created_by > web_users.id
+Ref: plant_equipment_cleaning_controls.created_by > web_users.id
+Ref: plant_general_cleaning_controls.created_by > web_users.id
+Ref: plant_handwashing_controls_caes.created_by > web_users.id
+Ref: plant_hygiene_controls.created_by > web_users.id
+Ref: plant_hygiene_controls_caes.created_by > web_users.id
+Ref: plant_packaging_seal_control_caes.created_by > web_users.id
+Ref: plant_packing_list_nacional_caes.created_by > web_users.id
+Ref: plant_packing_list_nacional_caes.closed_by > web_users.id
+Ref: plant_pest_controls.created_by > web_users.id
+Ref: plant_pest_controls_caes.created_by > web_users.id
+Ref: plant_sieve_monitoring_caes.created_by > web_users.id
+Ref: plant_solution_prep_controls_caes.created_by > web_users.id
+Ref: plant_temp_humidity_control_caes.created_by > web_users.id
+Ref: plant_transport_unit_controls_caes.created_by > web_users.id
+Ref: plant_waste_management_caes.created_by > web_users.id
+Ref: product_returns.created_by_web_user_id > web_users.id
+Ref: quality_evaluations.evaluated_by > web_users.id
+Ref: quality_evaluations.rejected_by > web_users.id

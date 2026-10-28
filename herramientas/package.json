@@ -1,0 +1,11 @@
+{
+  "name": "bd-diagrama-herramientas",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "actualizar": "node actualizar-esquema.mjs"
+  },
+  "dependencies": {
+    "@dbml/core": "3.9.0"
+  }
+}
